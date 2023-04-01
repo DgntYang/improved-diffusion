@@ -239,6 +239,7 @@ def create_gaussian_diffusion(
     rescale_learned_sigmas=False,
     timestep_respacing="",
 ):
+    # 增加降噪方案
     betas = gd.get_named_beta_schedule(noise_schedule, steps)
     if use_kl:
         loss_type = gd.LossType.RESCALED_KL
