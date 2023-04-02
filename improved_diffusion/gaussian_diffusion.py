@@ -345,6 +345,7 @@ class GaussianDiffusion:
             * x_t
         )
 
+    # 公式
     def _predict_eps_from_xstart(self, x_t, t, pred_xstart):
         return (
             _extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t
@@ -360,6 +361,7 @@ class GaussianDiffusion:
         self, model, x, t, clip_denoised=True, denoised_fn=None, model_kwargs=None
     ):
         """
+        基于x[t] 采样出x[t-1]
         Sample x_{t-1} from the model at the given timestep.
 
         :param model: the model to sample from.
@@ -431,6 +433,7 @@ class GaussianDiffusion:
             final = sample
         return final["sample"]
 
+    # 渐进式采样，逆序索引从x[T]到x[t]
     def p_sample_loop_progressive(
         self,
         model,
@@ -457,6 +460,7 @@ class GaussianDiffusion:
             img = noise
         else:
             img = th.randn(*shape, device=device)
+        # 逆序索引
         indices = list(range(self.num_timesteps))[::-1]
 
         if progress:
@@ -655,17 +659,21 @@ class GaussianDiffusion:
                  - 'output': a shape [N] tensor of NLLs or KLs.
                  - 'pred_xstart': the x_0 predictions.
         """
+        # 真实的x[0]、x[t]和t去计算出x[t-1]的均值与方差
         true_mean, _, true_log_variance_clipped = self.q_posterior_mean_variance(
             x_start=x_start, x_t=x_t, t=t
         )
+        # x[t]、t和预测的x[0]去计算出x[t-1]的均值和方差
         out = self.p_mean_variance(
             model, x_t, t, clip_denoised=clip_denoised, model_kwargs=model_kwargs
         )
+        # p_theta与q分布之间的KL散度
+        # 对应着L[t-1]损失函数
         kl = normal_kl(
             true_mean, true_log_variance_clipped, out["mean"], out["log_variance"]
         )
         kl = mean_flat(kl) / np.log(2.0)
-
+        # 对应了L[0]损失函数
         decoder_nll = -discretized_gaussian_log_likelihood(
             x_start, means=out["mean"], log_scales=0.5 * out["log_variance"]
         )
@@ -674,6 +682,8 @@ class GaussianDiffusion:
 
         # At the first timestep return the decoder NLL,
         # otherwise return KL(q(x_{t-1}|x_t,x_0) || p(x_{t-1}|x_t))
+        # t=0时刻，用离散的高斯分布去计算似然
+        # t>0时刻，直接用KL散度
         output = th.where((t == 0), decoder_nll, kl)
         return {"output": output, "pred_xstart": out["pred_xstart"]}
 
