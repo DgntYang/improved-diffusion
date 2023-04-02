@@ -168,6 +168,7 @@ class GaussianDiffusion:
             / (1.0 - self.alphas_cumprod)
         )
 
+        # q_mean_variance -> equation (8)
     def q_mean_variance(self, x_start, t):
         """
         Get the distribution q(x_t | x_0).
@@ -325,6 +326,7 @@ class GaussianDiffusion:
             "pred_xstart": pred_xstart,
         }
 
+    # 公式（12）
     def _predict_xstart_from_eps(self, x_t, t, eps):
         assert x_t.shape == eps.shape
         return (
@@ -332,6 +334,7 @@ class GaussianDiffusion:
             - _extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * eps
         )
 
+    # 公式（11）
     def _predict_xstart_from_xprev(self, x_t, t, xprev):
         assert x_t.shape == xprev.shape
         return (  # (xprev - coef2*x_t) / coef1
