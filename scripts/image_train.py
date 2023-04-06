@@ -59,7 +59,7 @@ def main():
 
 def create_argparser():
     defaults = dict(
-        data_dir="",
+        data_dir="../datasets",
         schedule_sampler="uniform",
         lr=1e-4,
         weight_decay=0.0,
